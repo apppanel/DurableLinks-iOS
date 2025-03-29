@@ -106,9 +106,9 @@ public struct DurableLinkComponents: Sendable {
         options: DurableLinkComponentsOptions = DurableLinkComponentsOptions(pathLength: .unguessable),
         completion: @escaping @Sendable (URL?, [String]?, Error?) -> Void
     ) async {
-        guard let delegate = await DurableLinkConfig.shared.shortenerDelegate else {
-            #if DEBUG // Is this DEBUG check needed? Not confident assertions are stripped out in every build scheme and don't want to crash prod
-            assertionFailure("No DurableLinkShortenerDelegate configured. You must set DurableLinkConfig.shared.shortenerDelegate before shortening URLs.")
+        guard let delegate = await DurableLinkConfig.shared.getShortenerDelegate() else {
+            #if DEBUG
+            assertionFailure("No DurableLinkShortenerDelegate configured. You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs.")
             #endif
 
             let error = NSError(domain: "DurableLinkError", code: 0, userInfo: [
