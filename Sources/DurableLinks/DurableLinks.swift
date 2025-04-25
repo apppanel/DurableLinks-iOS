@@ -15,20 +15,14 @@ class DurableLinks {
 
     public func handleDurableLink(_ incomingURL: URL, completion: @escaping @Sendable (Result<DurableLink, Error>) -> Void) {
         if isValidDurableLink(incomingURL) {
-            let pathComponents = incomingURL.pathComponents
-            if pathComponents.count > 1 {
-                let shortCode = pathComponents[1]
-                Task {
-                    await DurableLinkConfig.shared.getShortenerDelegate()?.exchangeShortCode(shortCode: shortCode) { url, error in
-                        if let url = url {
-                            completion(.success(DurableLink(longLink: url)!))
-                        } else {
-                            completion(.failure(error ?? NSError(domain: "DurableLink", code: 1, userInfo: [NSLocalizedDescriptionKey: "errorDescription"])))
-                        }
+            Task {
+                await DurableLinkConfig.shared.getShortenerDelegate()?.exchangeShortCode(requestedLink: incomingURL) { url, error in
+                    if let url = url {
+                        completion(.success(DurableLink(longLink: url)!))
+                    } else {
+                        completion(.failure(error ?? NSError(domain: "DurableLink", code: 1, userInfo: [NSLocalizedDescriptionKey: "errorDescription"])))
                     }
                 }
-            } else {
-                completion(.failure(NSError(domain: "No path parameters found", code: 0, userInfo: nil)))
             }
         } else {
             completion(.failure(NSError(domain: "Invalid durable link", code: 0, userInfo: nil)))
