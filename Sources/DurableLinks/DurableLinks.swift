@@ -19,7 +19,7 @@ class DurableLinks {
             if pathComponents.count > 1 {
                 let shortCode = pathComponents[1]
                 Task {
-                    await DurableLinkConfig.shared.getShortenerDelegate()?.exchangeShortCode(shortCode: shortCode) { url, warning, error in
+                    await DurableLinkConfig.shared.getShortenerDelegate()?.exchangeShortCode(shortCode: shortCode) { url, error in
                         if let url = url {
                             completion(.success(DurableLink(longLink: url)!))
                         } else {

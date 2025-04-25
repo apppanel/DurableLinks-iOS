@@ -11,6 +11,6 @@ public protocol DurableLinkShortenerDelegate: AnyObject, Sendable {
     
     func exchangeShortCode(
         shortCode: String,
-        completion: @escaping (URL?, [String]?, Error?) -> Void
+        completion: @escaping (URL?, Error?) -> Void
     )
 }
