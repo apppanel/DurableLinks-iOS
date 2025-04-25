@@ -8,4 +8,9 @@ public protocol DurableLinkShortenerDelegate: AnyObject, Sendable {
         options: DurableLinkComponentsOptions,
         completion: @escaping (URL?, [String]?, Error?) -> Void
     )
+    
+    func exchangeShortCode(
+        shortCode: String,
+        completion: @escaping (URL?, [String]?, Error?) -> Void
+    )
 }
