@@ -2,9 +2,9 @@
 
 import UIKit
 
-class DurableLinks {
+public class DurableLinks {
     
-    @MainActor public func handlePasteboardDurableLink(completion: @escaping @Sendable (Result<DurableLink, Error>) -> Void) {
+    @MainActor static public func handlePasteboardDurableLink(completion: @escaping @Sendable (Result<DurableLink, Error>) -> Void) {
         let pasteboard = UIPasteboard.general
         if pasteboard.hasURLs {
             if let copiedURLString = pasteboard.string, let url = URL(string: copiedURLString) {
@@ -13,7 +13,7 @@ class DurableLinks {
         }
     }
 
-    public func handleDurableLink(_ incomingURL: URL, completion: @escaping @Sendable (Result<DurableLink, Error>) -> Void) {
+    static public func handleDurableLink(_ incomingURL: URL, completion: @escaping @Sendable (Result<DurableLink, Error>) -> Void) {
         if isValidDurableLink(incomingURL) {
             Task {
                 await DurableLinkConfig.shared.getShortenerDelegate()?.exchangeShortCode(requestedLink: incomingURL) { url, error in
@@ -29,7 +29,7 @@ class DurableLinks {
         }
     }
 
-    func isValidDurableLink(_ url: URL) -> Bool {
+    private static func isValidDurableLink(_ url: URL) -> Bool {
         guard let host = url.host else {
             print("❌ Invalid URL: No host found.")
             return false
@@ -40,12 +40,12 @@ class DurableLinks {
         return hasPathOrCustomDomain && canParse && matchesShortLinkFormat
     }
 
-    func canParseUniversalLink(_ url: URL) -> Bool {
+    private static func canParseUniversalLink(_ url: URL) -> Bool {
         guard let host = url.host else { return false }
         return isAllowedCustomDomain(url)
     }
 
-    func isAllowedCustomDomain(_ url: URL) -> Bool {
+    private static func isAllowedCustomDomain(_ url: URL) -> Bool {
         guard let host = url.host else { return false }
         let allowedCustomDomains = ["yourapp.com", "yourapp.page.link"] // TODO: FIXME
         return allowedCustomDomains.contains(host)
