@@ -13,4 +13,6 @@ public protocol DurableLinkShortenerDelegate: AnyObject, Sendable {
         requestedLink: URL,
         completion: @escaping (URL?, Error?) -> Void
     )
+    
+    func getAllowedDomains() -> [String]
 }
