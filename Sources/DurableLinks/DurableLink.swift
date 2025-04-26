@@ -1,9 +1,9 @@
 import Foundation
 
 public struct DurableLink: Sendable {
-    let url: URL?                // The extracted deep link
-    let utmParameters: [String: String] // UTM parameters
-    let minimumAppVersion: String?      // Extracted from `imv`
+    public let url: URL?                // The extracted deep link
+    public let utmParameters: [String: String] // UTM parameters
+    public let minimumAppVersion: String?      // Extracted from `imv`
     
     public init?(longLink: URL) {
         guard let components = URLComponents(url: longLink, resolvingAgainstBaseURL: false),
