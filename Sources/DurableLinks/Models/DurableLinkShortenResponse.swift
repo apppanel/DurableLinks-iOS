@@ -2,11 +2,13 @@
 
 import Foundation
 
-public struct DurableLinkShortenResponse: Decodable {
+@objcMembers
+public final class DurableLinkShortenResponse: NSObject, Decodable {
     public let shortLink: String
-    public let warning: [Warning]
+    public let warnings: [Warning]
 
-    public struct Warning: Decodable {
+    @objcMembers
+    public final class Warning: NSObject, Decodable {
         public let warningMessage: String
     }
 }

@@ -29,7 +29,7 @@ public final class DurableLinks: NSObject, @unchecked Sendable {
     }
 }
 
-  public weak var delegate: DurableLinkShortenerDelegate?
+  @objc public weak var delegate: DurableLinkShortenerDelegate?
     
   private var allowedHosts: [String] = []
 
