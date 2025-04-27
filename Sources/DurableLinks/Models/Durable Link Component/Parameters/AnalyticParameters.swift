@@ -1,6 +1,7 @@
 import Foundation
 
-public struct DurableLinkAnalyticsParameters: Sendable, Codable {
+@objcMembers
+public final class DurableLinkAnalyticsParameters: NSObject, @unchecked Sendable, Codable {
 
     /// The UTM source (e.g., google, newsletter).
     public var source: String?

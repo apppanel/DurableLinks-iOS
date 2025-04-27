@@ -1,9 +1,10 @@
 import Foundation
 
-public struct DurableLinkAndroidParameters: Sendable, Codable {
+@objcMembers
+public final class DurableLinkAndroidParameters: NSObject, @unchecked Sendable, Codable {
 
     /// The Android app's package name.
-    public let packageName: String
+     public let packageName: String
 
     /// The link to open when the app isn't installed.
     public var fallbackURL: URL?
@@ -18,7 +19,7 @@ public struct DurableLinkAndroidParameters: Sendable, Codable {
     }
 
     /// Initializes the Android parameters with a required package name.
-    public init(packageName: String, fallbackURL: URL? = nil, minimumVersion: Int = 0) {
+     public init(packageName: String, fallbackURL: URL? = nil, minimumVersion: Int = 0) {
         self.packageName = packageName
         self.fallbackURL = fallbackURL
         self.minimumVersion = minimumVersion

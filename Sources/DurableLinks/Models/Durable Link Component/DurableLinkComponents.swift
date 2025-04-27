@@ -1,6 +1,7 @@
 import Foundation
 
-public struct DurableLinkComponents: Sendable {
+@objc
+public final class DurableLinkComponents: NSObject, @unchecked Sendable {
 
     private let link: URL
     private let domain: String
@@ -9,7 +10,7 @@ public struct DurableLinkComponents: Sendable {
     public var androidParameters: DurableLinkAndroidParameters?
     public var iTunesConnectParameters: DurableLinkItunesConnectAnalyticsParameters?
     public var socialMetaTagParameters: DurableLinkSocialMetaTagParameters?
-    public var options: DurableLinkComponentsOptions = DurableLinkComponentsOptions()
+    public var options: DurableLinkOptionsParameters = DurableLinkOptionsParameters()
     public var otherPlatformParameters: DurableLinkOtherPlatformParameters?
     public var analyticsParameters: DurableLinkAnalyticsParameters?
     
@@ -21,7 +22,7 @@ public struct DurableLinkComponents: Sendable {
         androidParameters: DurableLinkAndroidParameters? = nil,
         iTunesConnectParameters: DurableLinkItunesConnectAnalyticsParameters? = nil,
         socialMetaTagParameters: DurableLinkSocialMetaTagParameters? = nil,
-        options: DurableLinkComponentsOptions = DurableLinkComponentsOptions(),
+        options: DurableLinkOptionsParameters = DurableLinkOptionsParameters(),
         otherPlatformParameters: DurableLinkOtherPlatformParameters? = nil,
         analyticsParameters: DurableLinkAnalyticsParameters? = nil
     ) {
@@ -68,10 +69,21 @@ public struct DurableLinkComponents: Sendable {
                 return
             }
             for (key, value) in json {
-                if let stringValue = value as? String {
-                    dict[key] = stringValue
-                } else if let numberValue = value as? NSNumber {
-                    dict[key] = numberValue.stringValue
+                if key == "pathLength" {
+                    if let numberValue = value as? NSNumber {
+                        let stringValue: String
+                        switch numberValue.intValue {
+                        case 1: stringValue = "SHORT"
+                        default: stringValue = "UNGUESSABLE"
+                        }
+                        dict[key] = stringValue
+                    }
+                } else {
+                    if let stringValue = value as? String {
+                        dict[key] = stringValue
+                    } else if let numberValue = value as? NSNumber {
+                        dict[key] = numberValue.stringValue
+                    }
                 }
             }
         }
@@ -82,42 +94,37 @@ public struct DurableLinkComponents: Sendable {
         addParams(androidParameters)
         addParams(iTunesConnectParameters)
         addParams(otherPlatformParameters)
+        addParams(options)
         
         return dict
     }
-    
-    public func shorten(completion: @escaping @Sendable (URL?, [String]?, Error?) -> Void) {
-        guard let longURL = url else {
-            let error = NSError(domain: "DurableLinkError", code: 0, userInfo: [
-                NSLocalizedFailureReasonErrorKey: "Unable to produce long URL"
-            ])
-            completion(nil, nil, error)
-            return
-        }
 
-        Task {
-            await Self.shortenURL(longURL, options: options, completion: completion)
+    
+    public func shorten() async throws -> (URL, [String]?) {
+        guard let longURL = url else {
+            throw NSError(domain: "missing url", code: 0)
         }
+        return try await Self.shortenURL(longURL)
     }
 
-    
-    public static func shortenURL(
-        _ url: URL,
-        options: DurableLinkComponentsOptions = DurableLinkComponentsOptions(pathLength: .unguessable),
-        completion: @escaping @Sendable (URL?, [String]?, Error?) -> Void
-    ) async {
-        guard let delegate = await DurableLinkConfig.shared.getShortenerDelegate() else {
+    @MainActor
+    public static func shortenURL(_ url: URL) async throws -> (URL, [String]?) {
+        guard let delegate = DurableLinks.shared.delegate else {
             #if DEBUG
             assertionFailure("No DurableLinkShortenerDelegate configured. You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs.")
             #endif
-
-            let error = NSError(domain: "DurableLinkError", code: 0, userInfo: [
-                NSLocalizedDescriptionKey: "No DurableLinkShortenerDelegate configured."
-            ])
-            completion(nil, nil, error)
-            return
+            throw NSError(domain: "sdf", code: 0)
         }
-
-        delegate.shortenURL(longURL: url, options: options, completion: completion)
+        return try await withCheckedThrowingContinuation { continuation in
+            delegate.shortenURL(longURL: url) { shortURL, warnings, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let shortURL = shortURL {
+                    continuation.resume(returning: (shortURL, warnings))
+                } else {
+                    continuation.resume(throwing: NSError(domain: "sdf", code: 0))
+                }
+            }
+        }
     }
 }

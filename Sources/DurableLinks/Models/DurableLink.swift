@@ -1,24 +1,25 @@
 import Foundation
 
-public struct DurableLink: Sendable {
-    public let url: URL?                // The extracted deep link
-    public let utmParameters: [String: String] // UTM parameters
-    public let minimumAppVersion: String?      // Extracted from `imv`
+@objc
+public final class DurableLink: NSObject, @unchecked Sendable {
+    // The extracted deep link
+    @objc public let url: URL?
+    // Extracted UTM parameters
+    @objc public let utmParameters: [String: String]
+    // Extracted from `imv`
+    @objc public let minimumAppVersion: String?
     
-    public init?(longLink: URL) {
+    @objc public init?(longLink: URL) {
         guard let components = URLComponents(url: longLink, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else {
             print("❌ Invalid long link URL")
             return nil
         }
         
-        // Extract `link` parameter (actual deep link)
         let deepLink = queryItems.first(where: { $0.name == "link" })?.value.flatMap(URL.init)
         
-        // Extract `imv` (minimum app version)
         let imv = queryItems.first(where: { $0.name == "imv" })?.value
         
-        // Extract all UTM parameters dynamically
         var utmParams = [String: String]()
         for item in queryItems where item.name.starts(with: "utm_") {
             if let value = item.value {

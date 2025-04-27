@@ -11,4 +11,3 @@ public struct DurableLinkOtherPlatformParameters: Sendable, Codable {
         self.fallbackURL = fallbackURL
     }
 }
-

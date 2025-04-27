@@ -1,15 +1,16 @@
 import Foundation
 
-public struct DurableLinkItunesConnectAnalyticsParameters: Sendable, Codable {
+@objc
+public final class DurableLinkItunesConnectAnalyticsParameters: NSObject, @unchecked Sendable, Codable {
 
     /// The iTunes Connect affiliate token.
-    public var affiliateToken: String?
+    @objc public var affiliateToken: String?
 
     /// The iTunes Connect campaign token.
-    public var campaignToken: String?
+    @objc public var campaignToken: String?
 
     /// The iTunes Connect provider token.
-    public var providerToken: String?
+    @objc public var providerToken: String?
     
     enum CodingKeys: String, CodingKey {
         case affiliateToken = "at"
@@ -17,6 +18,7 @@ public struct DurableLinkItunesConnectAnalyticsParameters: Sendable, Codable {
         case providerToken = "pt"
     }
     
+    @objc 
     public init(affiliateToken: String? = nil, campaignToken: String? = nil, providerToken: String? = nil) {
         self.affiliateToken = affiliateToken
         self.campaignToken = campaignToken
