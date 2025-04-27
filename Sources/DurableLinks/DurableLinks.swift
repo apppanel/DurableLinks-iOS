@@ -91,7 +91,7 @@ extension DurableLinks {
 
 extension DurableLinks {
     public func shorten(
-      durableLink: DurableLink,
+      durableLink: DurableLinkComponents,
       completion: @escaping (URL?, [String]?, Error?) -> Void
     ) {
       guard let delegate = DurableLinks.shared.delegate else {
@@ -132,7 +132,7 @@ extension DurableLinks {
     }
 
     public func shorten(
-      durableLink: DurableLink
+        durableLink: DurableLinkComponents
     ) async throws -> (URL, [String]?) {
       guard let delegate = DurableLinks.shared.delegate else {
         assertionFailure(
