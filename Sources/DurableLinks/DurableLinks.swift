@@ -11,7 +11,7 @@ public final class DurableLinks: NSObject, @unchecked Sendable {
     @objc public static var shared: DurableLinks {
       return lock.sync {
         guard let instance = _shared else {
-          assertionFailure("Must call configure first")
+          assertionFailure("Must call DurableLinks.configure first")
           return DurableLinks()
         }
         return instance
@@ -45,16 +45,16 @@ extension DurableLinks {
                 return try await handleDurableLink(url)
             }
         }
-        throw NSError(domain: "DurableLink", code: 0, userInfo: [NSLocalizedDescriptionKey: "No valid URL found in pasteboard"])
+        throw DurableLinksError.noURLInPasteboard
     }
     
     public func handleDurableLink(_ incomingURL: URL) async throws -> DurableLink {
         guard isValidDurableLink(incomingURL) else {
-            throw NSError(domain: "DurableLink", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid durable link"])
+            throw DurableLinksError.invalidDurableLink
         }
         
         guard let delegate else {
-            throw NSError(domain: "DurableLink", code: 0, userInfo: [NSLocalizedDescriptionKey: "Shortener delegate unavailable"])
+            throw DurableLinksError.delegateUnavailable
         }
         
         return try await withCheckedThrowingContinuation { continuation in
@@ -62,7 +62,7 @@ extension DurableLinks {
                 if let url = url {
                     continuation.resume(returning: DurableLink(longLink: url)!)
                 } else {
-                    continuation.resume(throwing: error ?? NSError(domain: "DurableLink", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unknown error exchanging short code"]))
+                    continuation.resume(throwing: error ?? DurableLinksError.unknownDelegateResponse)
                 }
             }
         }
@@ -103,15 +103,10 @@ extension DurableLinks {
           "No DurableLinkShortenerDelegate configured. " +
           "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
         )
-        // immediately call back with an error
         completion(
           nil,
           nil,
-          NSError(
-            domain: "com.yourapp.DurableLinks",
-            code: 0,
-            userInfo: [NSLocalizedDescriptionKey: "No delegate configured"]
-          )
+          DurableLinksError.delegateUnavailable
         )
         return
       }
@@ -120,16 +115,11 @@ extension DurableLinks {
             completion(
               nil,
               nil,
-              NSError(
-                domain: "com.yourapp.DurableLinks",
-                code: 0,
-                userInfo: [NSLocalizedDescriptionKey: "Durable link is not valid"]
-              )
+              DurableLinksError.invalidDurableLink
             )
             return
         }
 
-      // just forward the call directly to the delegate
       delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
         completion(shortURL, warnings, error)
       }
@@ -143,15 +133,11 @@ extension DurableLinks {
           "No DurableLinkShortenerDelegate configured. " +
           "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
         )
-        throw NSError(
-          domain: "com.yourapp.DurableLinks",
-          code: 0,
-          userInfo: [NSLocalizedDescriptionKey: "No delegate configured"]
-        )
+          throw DurableLinksError.delegateUnavailable
       }
         
         guard let longURL = durableLink.url  else {
-            throw NSError(domain: "com.yourapp.DurableLinks", code: 0, userInfo: [NSLocalizedDescriptionKey: "Durable Link is not valid"])
+            throw DurableLinksError.invalidDurableLink
         }
 
       return try await withCheckedThrowingContinuation { continuation in
@@ -162,12 +148,8 @@ extension DurableLinks {
             continuation.resume(returning: (shortURL, warnings))
           } else {
             continuation.resume(
-              throwing: NSError(
-                domain: "com.yourapp.DurableLinks",
-                code: 0,
-                userInfo: [NSLocalizedDescriptionKey: "Unknown delegate response"]
+                throwing: DurableLinksError.unknownDelegateResponse
               )
-            )
           }
         }
       }
@@ -177,7 +159,6 @@ extension DurableLinks {
 extension DurableLinks {
     private func isValidDurableLink(_ url: URL) -> Bool {
         guard let host = url.host else {
-            print("❌ Invalid URL: No host found.")
             return false
         }
         let canParse = canParseUniversalLink(url)
