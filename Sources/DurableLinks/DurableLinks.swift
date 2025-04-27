@@ -2,28 +2,32 @@
 
 import UIKit
 
-@MainActor
 @objc
-public class DurableLinks: NSObject {
+public final class DurableLinks: NSObject, @unchecked Sendable {
   
-  private static var _shared: DurableLinks?
+    nonisolated(unsafe) private static var lock = DispatchQueue(label: "com.yourapp.DurableLinks.lock")
+    nonisolated(unsafe) private static var _shared: DurableLinks?
   
-  @objc public static var shared: DurableLinks {
-    guard let instance = _shared else {
-      assertionFailure("Must call configure first")
-      return DurableLinks()
+    @objc public static var shared: DurableLinks {
+      return lock.sync {
+        guard let instance = _shared else {
+          assertionFailure("Must call configure first")
+          return DurableLinks()
+        }
+        return instance
+      }
     }
-    return instance
-  }
   
-  @discardableResult
-  @objc public static func configure(allowedHosts: [String]) -> DurableLinks {
-    precondition(_shared == nil, "configure(...) called multiple times")
-    let instance = DurableLinks()
-    instance.allowedHosts = allowedHosts
-    _shared = instance
-    return instance
-  }
+@discardableResult
+@objc public static func configure(allowedHosts: [String]) -> DurableLinks {
+    return lock.sync {
+        precondition(_shared == nil, "configure(...) called multiple times")
+        let instance = DurableLinks()
+        instance.allowedHosts = allowedHosts
+        _shared = instance
+        return instance
+    }
+}
 
   public weak var delegate: DurableLinkShortenerDelegate?
     
