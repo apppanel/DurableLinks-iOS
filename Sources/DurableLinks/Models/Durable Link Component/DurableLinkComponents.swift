@@ -29,11 +29,11 @@ public final class DurableLinkComponents: NSObject, @unchecked Sendable {
         self.link = link
 
         guard let domainURIPrefixURL = URL(string: domainURIPrefix) else {
-            print("FDLLog: Invalid domainURIPrefix. Please input a valid URL.")
+            print("Invalid domainURIPrefix. Please input a valid URL.")
             return nil
         }
         guard domainURIPrefixURL.scheme?.lowercased() == "https" else {
-            print("FDLLog: Invalid domainURIPrefix scheme. Scheme needs to be https.")
+            print("Invalid domainURIPrefix scheme. Scheme needs to be https.")
             return nil
         }
 
