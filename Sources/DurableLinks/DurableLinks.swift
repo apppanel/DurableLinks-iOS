@@ -30,7 +30,9 @@ public class DurableLinks: NSObject {
   private var allowedHosts: [String] = []
 
   private override init() { super.init() }
-    
+}
+
+extension DurableLinks {
     public func handlePasteboardDurableLink() async throws -> DurableLink {
         let pasteboard = UIPasteboard.general
         if pasteboard.hasURLs {
@@ -84,6 +86,87 @@ public class DurableLinks: NSObject {
                 completion(nil, error as NSError)
             }
         }
+    }
+}
+
+extension DurableLinks {
+    public func shorten(
+      durableLink: DurableLink,
+      completion: @escaping (URL?, [String]?, Error?) -> Void
+    ) {
+      guard let delegate = DurableLinks.shared.delegate else {
+        assertionFailure(
+          "No DurableLinkShortenerDelegate configured. " +
+          "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
+        )
+        // immediately call back with an error
+        completion(
+          nil,
+          nil,
+          NSError(
+            domain: "com.yourapp.DurableLinks",
+            code: 0,
+            userInfo: [NSLocalizedDescriptionKey: "No delegate configured"]
+          )
+        )
+        return
+      }
+        
+        guard let longURL = durableLink.url else {
+            completion(
+              nil,
+              nil,
+              NSError(
+                domain: "com.yourapp.DurableLinks",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "Durable link is not valid"]
+              )
+            )
+            return
+        }
+
+      // just forward the call directly to the delegate
+      delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
+        completion(shortURL, warnings, error)
+      }
+    }
+
+    public func shorten(
+      durableLink: DurableLink
+    ) async throws -> (URL, [String]?) {
+      guard let delegate = DurableLinks.shared.delegate else {
+        assertionFailure(
+          "No DurableLinkShortenerDelegate configured. " +
+          "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
+        )
+        throw NSError(
+          domain: "com.yourapp.DurableLinks",
+          code: 0,
+          userInfo: [NSLocalizedDescriptionKey: "No delegate configured"]
+        )
+      }
+        
+        guard let longURL = durableLink.url  else {
+            throw NSError(domain: "com.yourapp.DurableLinks", code: 0, userInfo: [NSLocalizedDescriptionKey: "Durable Link is not valid"])
+        }
+
+      return try await withCheckedThrowingContinuation { continuation in
+        delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
+          if let error = error {
+            continuation.resume(throwing: error)
+          } else if let shortURL = shortURL {
+            continuation.resume(returning: (shortURL, warnings))
+          } else {
+            continuation.resume(
+              throwing: NSError(
+                domain: "com.yourapp.DurableLinks",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "Unknown delegate response"]
+              )
+            )
+          }
+        }
+      }
     }
 }
 

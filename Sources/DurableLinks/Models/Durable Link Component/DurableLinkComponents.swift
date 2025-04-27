@@ -98,33 +98,4 @@ public final class DurableLinkComponents: NSObject, @unchecked Sendable {
         
         return dict
     }
-
-    
-    public func shorten() async throws -> (URL, [String]?) {
-        guard let longURL = url else {
-            throw NSError(domain: "missing url", code: 0)
-        }
-        return try await Self.shortenURL(longURL)
-    }
-
-    @MainActor
-    public static func shortenURL(_ url: URL) async throws -> (URL, [String]?) {
-        guard let delegate = DurableLinks.shared.delegate else {
-            #if DEBUG
-            assertionFailure("No DurableLinkShortenerDelegate configured. You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs.")
-            #endif
-            throw NSError(domain: "sdf", code: 0)
-        }
-        return try await withCheckedThrowingContinuation { continuation in
-            delegate.shortenURL(longURL: url) { shortURL, warnings, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let shortURL = shortURL {
-                    continuation.resume(returning: (shortURL, warnings))
-                } else {
-                    continuation.resume(throwing: NSError(domain: "sdf", code: 0))
-                }
-            }
-        }
-    }
 }
