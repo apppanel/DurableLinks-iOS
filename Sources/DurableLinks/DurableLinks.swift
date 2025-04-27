@@ -5,7 +5,7 @@ import UIKit
 @objc
 public final class DurableLinks: NSObject, @unchecked Sendable {
   
-    nonisolated(unsafe) private static var lock = DispatchQueue(label: "com.yourapp.DurableLinks.lock")
+    nonisolated(unsafe) private static var lock = DispatchQueue(label: "com.DurableLinks.lock")
     nonisolated(unsafe) private static var _shared: DurableLinks?
   
     @objc public static var shared: DurableLinks {
