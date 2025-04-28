@@ -38,6 +38,14 @@ public final class DurableLinks: NSObject, @unchecked Sendable {
 
 extension DurableLinks {
     public func handlePasteboardDurableLink() async throws -> DurableLink {
+        let hasCheckedPasteboardKey = "hasCheckedPasteboardForDurableLink"
+        
+        if UserDefaults.standard.bool(forKey: hasCheckedPasteboardKey) {
+            throw DurableLinksError.noURLInPasteboard
+        }
+
+        UserDefaults.standard.set(true, forKey: hasCheckedPasteboardKey)
+        
         let pasteboard = UIPasteboard.general
         if pasteboard.hasURLs {
             if let copiedURLString = pasteboard.string,
