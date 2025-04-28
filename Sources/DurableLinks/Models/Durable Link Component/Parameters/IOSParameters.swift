@@ -14,15 +14,14 @@ public final class DurableLinkIOSParameters: NSObject, @unchecked Sendable, Coda
 
     /// The minimum version of your app that can open the link.
     @objc public var minimumAppVersion: String?
-    
-    
+
     enum CodingKeys: String, CodingKey {
         case appStoreID = "isi"
         case fallbackURL = "ifl"
         case iPadFallbackURL = "ipfl"
         case minimumAppVersion = "imv"
     }
-    
+
     @objc
     public init(appStoreID: String? = nil, fallbackURL: URL? = nil, iPadFallbackURL: URL? = nil, minimumAppVersion: String? = nil) {
         self.appStoreID = appStoreID

@@ -4,67 +4,69 @@ import UIKit
 
 @objc
 public final class DurableLinks: NSObject, @unchecked Sendable {
-  
+
     nonisolated(unsafe) private static var lock = DispatchQueue(label: "com.DurableLinks.lock")
     nonisolated(unsafe) private static var _shared: DurableLinks?
-  
+
     @objc public static var shared: DurableLinks {
-      return lock.sync {
-        guard let instance = _shared else {
-          assertionFailure("Must call DurableLinks.configure first")
-          return DurableLinks()
+        return lock.sync {
+            guard let instance = _shared else {
+                assertionFailure("Must call DurableLinks.configure first")
+                return DurableLinks()
+            }
+            return instance
         }
-        return instance
-      }
     }
-  
-@discardableResult
-@objc public static func configure(allowedHosts: [String]) -> DurableLinks {
-    return lock.sync {
-        precondition(_shared == nil, "configure(...) called multiple times")
-        let instance = DurableLinks()
-        instance.allowedHosts = allowedHosts
-        _shared = instance
-        return instance
+
+    @discardableResult
+    @objc public static func configure(allowedHosts: [String]) -> DurableLinks {
+        return lock.sync {
+            precondition(_shared == nil, "configure(...) called multiple times")
+            let instance = DurableLinks()
+            instance.allowedHosts = allowedHosts
+            _shared = instance
+            return instance
+        }
     }
+
+    @objc public weak var delegate: DurableLinkShortenerDelegate?
+
+    private var allowedHosts: [String] = []
+
+    private override init() { super.init() }
 }
 
-  @objc public weak var delegate: DurableLinkShortenerDelegate?
-    
-  private var allowedHosts: [String] = []
-
-  private override init() { super.init() }
-}
 
 extension DurableLinks {
     public func handlePasteboardDurableLink() async throws -> DurableLink {
         let hasCheckedPasteboardKey = "hasCheckedPasteboardForDurableLink"
-        
+
         if UserDefaults.standard.bool(forKey: hasCheckedPasteboardKey) {
             throw DurableLinksError.noURLInPasteboard
         }
 
         UserDefaults.standard.set(true, forKey: hasCheckedPasteboardKey)
-        
+
         let pasteboard = UIPasteboard.general
         if pasteboard.hasURLs {
             if let copiedURLString = pasteboard.string,
-               let url = URL(string: copiedURLString) {
+                let url = URL(string: copiedURLString)
+            {
                 return try await handleDurableLink(url)
             }
         }
         throw DurableLinksError.noURLInPasteboard
     }
-    
+
     public func handleDurableLink(_ incomingURL: URL) async throws -> DurableLink {
         guard isValidDurableLink(incomingURL) else {
             throw DurableLinksError.invalidDurableLink
         }
-        
+
         guard let delegate else {
             throw DurableLinksError.delegateUnavailable
         }
-        
+
         return try await withCheckedThrowingContinuation { continuation in
             delegate.exchangeShortCode(requestedLink: incomingURL) { url, error in
                 if let url = url {
@@ -87,7 +89,7 @@ extension DurableLinks {
             }
         }
     }
-    
+
     @objc
     public func handleDurableLink(_ incomingURL: URL, completion: @Sendable @escaping (DurableLink?, NSError?) -> Void) {
         Task {
@@ -103,64 +105,64 @@ extension DurableLinks {
 
 extension DurableLinks {
     public func shorten(
-      durableLink: DurableLinkComponents,
-      completion: @escaping (URL?, [String]?, Error?) -> Void
+        durableLink: DurableLinkComponents,
+        completion: @escaping (URL?, [String]?, Error?) -> Void
     ) {
-      guard let delegate = DurableLinks.shared.delegate else {
-        assertionFailure(
-          "No DurableLinkShortenerDelegate configured. " +
-          "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
-        )
-        completion(
-          nil,
-          nil,
-          DurableLinksError.delegateUnavailable
-        )
-        return
-      }
-        
-        guard let longURL = durableLink.url else {
+        guard let delegate = DurableLinks.shared.delegate else {
+            assertionFailure(
+                "No DurableLinkShortenerDelegate configured. "
+                    + "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
+            )
             completion(
-              nil,
-              nil,
-              DurableLinksError.invalidDurableLink
+                nil,
+                nil,
+                DurableLinksError.delegateUnavailable
             )
             return
         }
 
-      delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
-        completion(shortURL, warnings, error)
-      }
+        guard let longURL = durableLink.url else {
+            completion(
+                nil,
+                nil,
+                DurableLinksError.invalidDurableLink
+            )
+            return
+        }
+
+        delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
+            completion(shortURL, warnings, error)
+        }
     }
 
     public func shorten(
         durableLink: DurableLinkComponents
     ) async throws -> (URL, [String]?) {
-      guard let delegate = DurableLinks.shared.delegate else {
-        assertionFailure(
-          "No DurableLinkShortenerDelegate configured. " +
-          "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
-        )
-          throw DurableLinksError.delegateUnavailable
-      }
-        
-        guard let longURL = durableLink.url  else {
+        guard let delegate = DurableLinks.shared.delegate else {
+            assertionFailure(
+                "No DurableLinkShortenerDelegate configured. "
+                    + "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
+            )
+            throw DurableLinksError.delegateUnavailable
+        }
+
+        guard let longURL = durableLink.url else {
             throw DurableLinksError.invalidDurableLink
         }
 
-      return try await withCheckedThrowingContinuation { continuation in
-        delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
-          if let error = error {
-            continuation.resume(throwing: error)
-          } else if let shortURL = shortURL {
-            continuation.resume(returning: (shortURL, warnings))
-          } else {
-            continuation.resume(
-                throwing: DurableLinksError.unknownDelegateResponse
-              )
-          }
+        return try await withCheckedThrowingContinuation { continuation in
+            delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let shortURL = shortURL {
+                    continuation.resume(returning: (shortURL, warnings))
+                } else {
+                    continuation.resume(
+                        throwing: DurableLinksError.unknownDelegateResponse
+                    )
+                }
+            }
         }
-      }
     }
 }
 

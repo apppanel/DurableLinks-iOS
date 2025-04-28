@@ -11,18 +11,18 @@ public final class DurableLinkItunesConnectAnalyticsParameters: NSObject, @unche
 
     /// The iTunes Connect provider token.
     @objc public var providerToken: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case affiliateToken = "at"
         case campaignToken = "ct"
         case providerToken = "pt"
     }
-    
-    @objc 
+
+    @objc
     public init(affiliateToken: String? = nil, campaignToken: String? = nil, providerToken: String? = nil) {
         self.affiliateToken = affiliateToken
         self.campaignToken = campaignToken
         self.providerToken = providerToken
     }
-    
+
 }

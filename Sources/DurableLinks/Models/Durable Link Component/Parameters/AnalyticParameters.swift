@@ -17,7 +17,7 @@ public final class DurableLinkAnalyticsParameters: NSObject, @unchecked Sendable
 
     /// The UTM content (e.g., banner_ad).
     public var content: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case source = "utm_source"
         case medium = "utm_medium"

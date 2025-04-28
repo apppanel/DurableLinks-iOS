@@ -18,11 +18,18 @@ public enum DurableLinksError: Int, Error {
         case .delegateUnavailable:
             return NSError(domain: "com.DurableLinks", code: rawValue, userInfo: [NSLocalizedDescriptionKey: "Delegate unavailable"])
         case .unknownDelegateResponse:
-            return NSError(domain: "com.DurableLinks", code: rawValue, userInfo: [NSLocalizedDescriptionKey: "Unknown response from delegate"])
+            return NSError(
+                domain: "com.DurableLinks", code: rawValue, userInfo: [NSLocalizedDescriptionKey: "Unknown response from delegate"])
         case .noURLInPasteboard:
-            return NSError(domain: "com.DurableLinks", code: rawValue, userInfo: [NSLocalizedDescriptionKey: "No valid URL found in pasteboard"])
+            return NSError(
+                domain: "com.DurableLinks", code: rawValue, userInfo: [NSLocalizedDescriptionKey: "No valid URL found in pasteboard"])
         case .alreadyCheckedPasteboard:
-            return NSError(domain: "com.DurableLinks", code: rawValue, userInfo: [NSLocalizedDescriptionKey: "Already checked pasteboard for Durable Link once, further checks will fail immediately as handling now goes through handleDurableLink"])
+            return NSError(
+                domain: "com.DurableLinks", code: rawValue,
+                userInfo: [
+                    NSLocalizedDescriptionKey:
+                        "Already checked pasteboard for Durable Link once, further checks will fail immediately as handling now goes through handleDurableLink"
+                ])
         }
     }
 }
