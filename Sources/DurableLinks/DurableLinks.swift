@@ -5,6 +5,8 @@ import UIKit
 @objc
 public final class DurableLinks: NSObject, @unchecked Sendable {
 
+    @objc public let SDKVersion: String = "1.0.0"
+    
     nonisolated(unsafe) private static var lock = DispatchQueue(label: "com.DurableLinks.lock")
     nonisolated(unsafe) private static var _shared: DurableLinks?
 
@@ -52,14 +54,14 @@ extension DurableLinks {
             if let copiedURLString = pasteboard.string,
                 let url = URL(string: copiedURLString)
             {
-                return try await handleDurableLink(url)
+                return try await handleDynamicLink(url)
             }
         }
         throw DurableLinksError.noURLInPasteboard
     }
 
-    public func handleDurableLink(_ incomingURL: URL) async throws -> DurableLink {
-        guard isValidDurableLink(incomingURL) else {
+    public func handleDynamicLink(_ incomingURL: URL) async throws -> DurableLink {
+        guard isValidDynamicLink(url: incomingURL) else {
             throw DurableLinksError.invalidDurableLink
         }
 
@@ -91,10 +93,10 @@ extension DurableLinks {
     }
 
     @objc
-    public func handleDurableLink(_ incomingURL: URL, completion: @Sendable @escaping (DurableLink?, NSError?) -> Void) {
+    public func handleDynamicLink(_ incomingURL: URL, completion: @Sendable @escaping (DurableLink?, NSError?) -> Void) {
         Task {
             do {
-                let durableLink = try await handleDurableLink(incomingURL)
+                let durableLink = try await handleDynamicLink(incomingURL)
                 completion(durableLink, nil)
             } catch {
                 completion(nil, error as NSError)
@@ -167,7 +169,7 @@ extension DurableLinks {
 }
 
 extension DurableLinks {
-    private func isValidDurableLink(_ url: URL) -> Bool {
+    private func isValidDynamicLink(url: URL) -> Bool {
         guard let host = url.host else {
             return false
         }
