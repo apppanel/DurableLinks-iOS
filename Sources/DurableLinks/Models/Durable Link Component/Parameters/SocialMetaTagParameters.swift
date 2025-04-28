@@ -4,10 +4,8 @@ public struct DurableLinkSocialMetaTagParameters: Sendable, Codable {
 
     public var title: String?
 
-    /// The description to be used when the Durable Link is shared in a social post.
     public var descriptionText: String?
 
-    /// The image URL to be used when the Durable Link is shared in a social post.
     public var imageURL: URL?
 
     enum CodingKeys: String, CodingKey {
