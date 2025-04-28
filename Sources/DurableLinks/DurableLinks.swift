@@ -54,13 +54,13 @@ extension DurableLinks {
             if let copiedURLString = pasteboard.string,
                 let url = URL(string: copiedURLString)
             {
-                return try await handleDynamicLink(url)
+                return try await handleUniversalLink(url)
             }
         }
         throw DurableLinksError.noURLInPasteboard
     }
 
-    public func handleDynamicLink(_ incomingURL: URL) async throws -> DurableLink {
+    public func handleUniversalLink(_ incomingURL: URL) async throws -> DurableLink {
         guard isValidDynamicLink(url: incomingURL) else {
             throw DurableLinksError.invalidDurableLink
         }
@@ -93,10 +93,10 @@ extension DurableLinks {
     }
 
     @objc
-    public func handleDynamicLink(_ incomingURL: URL, completion: @Sendable @escaping (DurableLink?, NSError?) -> Void) {
+    public func handleUniversalLink(_ incomingURL: URL, completion: @Sendable @escaping (DurableLink?, NSError?) -> Void) {
         Task {
             do {
-                let durableLink = try await handleDynamicLink(incomingURL)
+                let durableLink = try await handleUniversalLink(incomingURL)
                 completion(durableLink, nil)
             } catch {
                 completion(nil, error as NSError)
