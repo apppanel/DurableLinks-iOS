@@ -54,7 +54,7 @@ extension DurableLinks {
             if let copiedURLString = pasteboard.string,
                 let url = URL(string: copiedURLString)
             {
-                let durableLink = try await handleUniversalLink(url)
+                let durableLink = try await handleDurableLink(url)
                 if pasteboard.string == copiedURLString {
                     pasteboard.string = nil
                 }
@@ -64,7 +64,7 @@ extension DurableLinks {
         throw DurableLinksError.noURLInPasteboard
     }
 
-    public func handleUniversalLink(_ incomingURL: URL) async throws -> DurableLink {
+    public func handleDurableLink(_ incomingURL: URL) async throws -> DurableLink {
         guard isValidDurableLink(url: incomingURL) else {
             throw DurableLinksError.invalidDurableLink
         }
@@ -100,10 +100,10 @@ extension DurableLinks {
     }
 
     @objc
-    public func handleUniversalLink(_ incomingURL: URL, completion: @Sendable @escaping (DurableLink?, NSError?) -> Void) {
+    public func handleDurableLink(_ incomingURL: URL, completion: @Sendable @escaping (DurableLink?, NSError?) -> Void) {
         Task {
             do {
-                let durableLink = try await handleUniversalLink(incomingURL)
+                let durableLink = try await handleDurableLink(incomingURL)
                 completion(durableLink, nil)
             } catch {
                 completion(nil, error as NSError)
@@ -174,16 +174,16 @@ extension DurableLinks {
 }
 
 extension DurableLinks {
-    func isValidDurableLink(url: URL) -> Bool {
+    public func isValidDurableLink(url: URL) -> Bool {
         guard let host = url.host else {
             return false
         }
-        let canParse = canParseUniversalLink(url)
+        let canParse = canParseDurableLink(url)
         let matchesShortLinkFormat = url.path.range(of: "/[^/]+", options: .regularExpression) != nil
         return canParse && matchesShortLinkFormat
     }
 
-    private func canParseUniversalLink(_ url: URL) -> Bool {
+    private func canParseDurableLink(_ url: URL) -> Bool {
         guard let host = url.host else { return false }
         return isAllowedCustomDomain(url)
     }
