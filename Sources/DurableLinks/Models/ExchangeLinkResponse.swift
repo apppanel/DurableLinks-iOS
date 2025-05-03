@@ -2,6 +2,7 @@
 
 import Foundation
 
-public struct ExchangeLinkResponse: Decodable {
+@objcMembers
+public final class  ExchangeLinkResponse: NSObject, Decodable, @unchecked Sendable {
     public let longLink: URL?
 }

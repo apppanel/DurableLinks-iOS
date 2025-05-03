@@ -44,7 +44,7 @@ extension DurableLinks {
         let hasCheckedPasteboardKey = "hasCheckedPasteboardForDurableLink"
 
         if UserDefaults.standard.bool(forKey: hasCheckedPasteboardKey) {
-            throw DurableLinksError.noURLInPasteboard
+            throw DurableLinksError.alreadyCheckedPasteboard
         }
 
         UserDefaults.standard.set(true, forKey: hasCheckedPasteboardKey)
@@ -54,14 +54,18 @@ extension DurableLinks {
             if let copiedURLString = pasteboard.string,
                 let url = URL(string: copiedURLString)
             {
-                return try await handleUniversalLink(url)
+                let durableLink = try await handleUniversalLink(url)
+                if pasteboard.string == copiedURLString {
+                    pasteboard.string = nil
+                }
+                return durableLink
             }
         }
         throw DurableLinksError.noURLInPasteboard
     }
 
     public func handleUniversalLink(_ incomingURL: URL) async throws -> DurableLink {
-        guard isValidDynamicLink(url: incomingURL) else {
+        guard isValidDurableLink(url: incomingURL) else {
             throw DurableLinksError.invalidDurableLink
         }
 
@@ -70,12 +74,15 @@ extension DurableLinks {
         }
 
         return try await withCheckedThrowingContinuation { continuation in
-            delegate.exchangeShortCode(requestedLink: incomingURL) { url, error in
-                if let url = url {
-                    continuation.resume(returning: DurableLink(longLink: url)!)
-                } else {
+            delegate.exchangeShortCode(requestedLink: incomingURL) { response, error in
+                guard
+                    let longLink = response?.longLink,
+                    let durableLink = DurableLink(longLink: longLink)
+                else {
                     continuation.resume(throwing: error ?? DurableLinksError.unknownDelegateResponse)
+                    return
                 }
+                continuation.resume(returning: durableLink)
             }
         }
     }
@@ -108,7 +115,7 @@ extension DurableLinks {
 extension DurableLinks {
     public func shorten(
         durableLink: DurableLinkComponents,
-        completion: @escaping (URL?, [String]?, Error?) -> Void
+        completion: @escaping (DurableLinkShortenResponse?, Error?) -> Void
     ) {
         guard let delegate = DurableLinks.shared.delegate else {
             assertionFailure(
@@ -116,7 +123,6 @@ extension DurableLinks {
                     + "You must set DurableLinkConfig.shared.setShortenerDelegate(...) before shortening URLs."
             )
             completion(
-                nil,
                 nil,
                 DurableLinksError.delegateUnavailable
             )
@@ -126,20 +132,19 @@ extension DurableLinks {
         guard let longURL = durableLink.url else {
             completion(
                 nil,
-                nil,
                 DurableLinksError.invalidDurableLink
             )
             return
         }
 
-        delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
-            completion(shortURL, warnings, error)
+        delegate.shortenURL(longURL: longURL) { durableLinkShortenResponse, error in
+            completion(durableLinkShortenResponse, error)
         }
     }
 
     public func shorten(
         durableLink: DurableLinkComponents
-    ) async throws -> (URL, [String]?) {
+    ) async throws -> DurableLinkShortenResponse {
         guard let delegate = DurableLinks.shared.delegate else {
             assertionFailure(
                 "No DurableLinkShortenerDelegate configured. "
@@ -153,11 +158,11 @@ extension DurableLinks {
         }
 
         return try await withCheckedThrowingContinuation { continuation in
-            delegate.shortenURL(longURL: longURL) { shortURL, warnings, error in
+            delegate.shortenURL(longURL: longURL) { durableLinkShortenResponse, error in
                 if let error = error {
                     continuation.resume(throwing: error)
-                } else if let shortURL = shortURL {
-                    continuation.resume(returning: (shortURL, warnings))
+                } else if let durableLinkShortenResponse = durableLinkShortenResponse {
+                    continuation.resume(returning: (durableLinkShortenResponse))
                 } else {
                     continuation.resume(
                         throwing: DurableLinksError.unknownDelegateResponse
@@ -169,7 +174,7 @@ extension DurableLinks {
 }
 
 extension DurableLinks {
-    private func isValidDynamicLink(url: URL) -> Bool {
+    func isValidDurableLink(url: URL) -> Bool {
         guard let host = url.host else {
             return false
         }
